@@ -6,11 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.taskmanager"
+    namespace = "com.example.taskandnotesapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.taskmanager"
+        applicationId = "com.example.taskandnotesapp" +
+                ""
         minSdk = 24
         targetSdk = 36
         versionCode = 1
