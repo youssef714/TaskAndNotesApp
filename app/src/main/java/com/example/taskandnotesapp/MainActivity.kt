@@ -15,6 +15,8 @@ import androidx.navigation.compose.composable
 import com.example.taskandnotesapp.ui.MainScreen
 import com.example.taskandnotesapp.ui.auth.LoginScreen
 import com.example.taskandnotesapp.ui.auth.RegisterScreen
+import com.example.taskandnotesapp.ui.tasks.TasksScreen
+import com.example.taskandnotesapp.ui.notes.NotesScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +54,8 @@ fun AppNavHost(
         navController = navController,
         startDestination = "login"
     ) {
+
+        // ---------------- LOGIN --------------------
         composable("login") {
             LoginScreen(
                 userDao = userDao,
@@ -66,6 +70,7 @@ fun AppNavHost(
             )
         }
 
+        // ---------------- REGISTER --------------------
         composable("register") {
             RegisterScreen(
                 userDao = userDao,
@@ -78,17 +83,36 @@ fun AppNavHost(
             )
         }
 
+        // ---------------- MAIN MENU --------------------
         composable("main/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+
             MainScreen(
                 userId = userId,
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onNavigateToTasks = {
+                    navController.navigate("tasks/$userId")
+                },
+                onNavigateToNotes = {
+                    navController.navigate("notes/$userId")
                 }
             )
         }
+
+        // ---------------- TASKS SCREEN --------------------
+        composable("tasks/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+            TasksScreen(userId = userId)
+        }
+
+        // ---------------- NOTES SCREEN --------------------
+        composable("notes/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+            NotesScreen(userId = userId)
+        }
     }
 }
-

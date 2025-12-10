@@ -11,7 +11,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MainScreen(
     userId: Int,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToTasks: () -> Unit,
+    onNavigateToNotes: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -33,9 +35,27 @@ fun MainScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Logged in as user id: $userId")
+
+            Text("Logged in as User ID: $userId")
+            Spacer(Modifier.height(24.dp))
+
+            // ----------------- TASKS BUTTON -----------------
+            Button(
+                onClick = onNavigateToTasks,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            ) {
+                Text("Go to Tasks")
+            }
+
             Spacer(Modifier.height(16.dp))
-            Text("Main screen ready. We will add tasks & notes here ✔")
+
+            // ----------------- NOTES BUTTON -----------------
+            Button(
+                onClick = onNavigateToNotes,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            ) {
+                Text("Go to Notes")
+            }
         }
     }
 }
