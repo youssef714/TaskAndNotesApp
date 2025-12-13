@@ -106,13 +106,19 @@ fun AppNavHost(
         // ---------------- TASKS SCREEN --------------------
         composable("tasks/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
-            TasksScreen(userId = userId)
+            TasksScreen(
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // ---------------- NOTES SCREEN --------------------
         composable("notes/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
-            NotesScreen(userId = userId)
+            NotesScreen(
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }
