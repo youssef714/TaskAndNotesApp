@@ -81,7 +81,7 @@ fun RegisterScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                text = "Create Account ✨",
+                text = "Create Account ",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,

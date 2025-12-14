@@ -67,7 +67,7 @@ fun MainScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                text = "Welcome! 🎉",
+                text = "Welcome !",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,

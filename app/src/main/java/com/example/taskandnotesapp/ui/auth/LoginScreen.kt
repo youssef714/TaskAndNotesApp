@@ -79,7 +79,7 @@ fun LoginScreen(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                text = "Welcome Back! 👋",
+                text = "Welcome Back!",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp,
