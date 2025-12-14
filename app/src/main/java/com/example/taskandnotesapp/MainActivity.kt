@@ -6,6 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.rememberNavController
 import com.example.taskandnotesapp.data.AppDatabase
 import com.example.taskandnotesapp.data.UserDao
@@ -17,6 +22,8 @@ import com.example.taskandnotesapp.ui.auth.LoginScreen
 import com.example.taskandnotesapp.ui.auth.RegisterScreen
 import com.example.taskandnotesapp.ui.tasks.TasksScreen
 import com.example.taskandnotesapp.ui.notes.NotesScreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +62,6 @@ fun AppNavHost(
         startDestination = "login"
     ) {
 
-        // ---------------- LOGIN --------------------
         composable("login") {
             LoginScreen(
                 userDao = userDao,
@@ -70,7 +76,6 @@ fun AppNavHost(
             )
         }
 
-        // ---------------- REGISTER --------------------
         composable("register") {
             RegisterScreen(
                 userDao = userDao,
@@ -83,27 +88,37 @@ fun AppNavHost(
             )
         }
 
-        // ---------------- MAIN MENU --------------------
         composable("main/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
 
-            MainScreen(
-                userId = userId,
-                onLogout = {
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                onNavigateToTasks = {
-                    navController.navigate("tasks/$userId")
-                },
-                onNavigateToNotes = {
-                    navController.navigate("notes/$userId")
+            var userName by remember { mutableStateOf("") }
+
+            LaunchedEffect(userId) {
+                val user = withContext(Dispatchers.IO) {
+                    userDao.getUserById(userId)
                 }
-            )
+                userName = user?.username ?: "User"
+            }
+
+            if (userName.isNotEmpty()) {
+                MainScreen(
+                    userId = userId,
+                    userName = userName,
+                    onLogout = {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onNavigateToTasks = {
+                        navController.navigate("tasks/$userId")
+                    },
+                    onNavigateToNotes = {
+                        navController.navigate("notes/$userId")
+                    }
+                )
+            }
         }
 
-        // ---------------- TASKS SCREEN --------------------
         composable("tasks/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
             TasksScreen(
@@ -112,7 +127,6 @@ fun AppNavHost(
             )
         }
 
-        // ---------------- NOTES SCREEN --------------------
         composable("notes/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
             NotesScreen(

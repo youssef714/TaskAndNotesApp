@@ -21,6 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.example.taskandnotesapp.data.AppDatabase
+import com.example.taskandnotesapp.data.TaskEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +34,10 @@ fun TasksScreen(
     userId: Int,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val taskDao = remember { AppDatabase.getInstance(context).taskDao() }
+    val scope = rememberCoroutineScope()
+
     var tasks by remember { mutableStateOf(listOf<Task>()) }
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
@@ -35,6 +45,24 @@ fun TasksScreen(
     var showMenu by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
+
+    // Load tasks from database
+    LaunchedEffect(userId) {
+        tasks = withContext(Dispatchers.IO) {
+            taskDao.getTasksForUser(userId).map { entity ->
+                Task(
+                    id = entity.id,
+                    userId = entity.userId,
+                    title = entity.title,
+                    description = entity.description,
+                    isCompleted = entity.isDone,
+                    priority = "Medium", // Default priority
+                    dueDate = null,
+                    createdAt = entity.createdAt
+                )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -131,14 +159,6 @@ fun TasksScreen(
                                     },
                                     leadingIcon = { Icon(Icons.Outlined.Circle, null) }
                                 )
-                                DropdownMenuItem(
-                                    text = { Text("High Priority") },
-                                    onClick = {
-                                        filterOption = "High"
-                                        showMenu = false
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.Warning, null) }
-                                )
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -146,7 +166,6 @@ fun TasksScreen(
                         )
                     )
 
-                    // Search Bar
                     AnimatedVisibility(
                         visible = isSearchActive,
                         enter = expandVertically() + fadeIn(),
@@ -158,7 +177,7 @@ fun TasksScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
-                            placeholder = { Text("Search tasks by title...") },
+                            placeholder = { Text("Search tasks...") },
                             leadingIcon = {
                                 Icon(Icons.Default.Search, "Search", tint = Color(0xFF6B4CE6))
                             },
@@ -186,15 +205,9 @@ fun TasksScreen(
                     onClick = { showAddDialog = true },
                     containerColor = Color(0xFF6B4CE6),
                     contentColor = Color.White,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .scale(1f)
+                    modifier = Modifier.size(64.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        "Add Task",
-                        modifier = Modifier.size(32.dp)
-                    )
+                    Icon(Icons.Default.Add, "Add Task", modifier = Modifier.size(32.dp))
                 }
             }
         ) { padding ->
@@ -203,7 +216,6 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Enhanced Filter chips
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -233,24 +245,17 @@ fun TasksScreen(
                     )
                 }
 
-                // Tasks list with search filtering
-                val filteredTasks = tasks
-                    .filter { task ->
-                        val matchesSearch = if (searchQuery.isBlank()) {
-                            true
-                        } else {
-                            task.title.contains(searchQuery, ignoreCase = true)
-                        }
+                val filteredTasks = tasks.filter { task ->
+                    val matchesSearch = if (searchQuery.isBlank()) true
+                    else task.title.contains(searchQuery, ignoreCase = true)
 
-                        val matchesFilter = when (filterOption) {
-                            "Completed" -> task.isCompleted
-                            "Pending" -> !task.isCompleted
-                            "High" -> task.priority == "High"
-                            else -> true
-                        }
-
-                        matchesSearch && matchesFilter
+                    val matchesFilter = when (filterOption) {
+                        "Completed" -> task.isCompleted
+                        "Pending" -> !task.isCompleted
+                        else -> true
                     }
+                    matchesSearch && matchesFilter
+                }
 
                 if (filteredTasks.isEmpty()) {
                     Box(
@@ -261,61 +266,56 @@ fun TasksScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                Color(0xFF6B4CE6).copy(alpha = 0.2f),
-                                                Color(0xFF6B4CE6).copy(alpha = 0.05f)
-                                            )
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = Color(0xFF6B4CE6)
-                                )
-                            }
+                            Icon(
+                                if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color(0xFF6B4CE6)
+                            )
                             Text(
                                 if (searchQuery.isNotEmpty()) "No tasks found" else "No tasks yet",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2D3142)
-                            )
-                            Text(
-                                if (searchQuery.isNotEmpty())
-                                    "Try a different search term"
-                                else
-                                    "Create a new task to get started!",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8B8FA3)
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(filteredTasks, key = { it.id }) { task ->
                             EnhancedTaskItem(
                                 task = task,
                                 onToggleComplete = {
-                                    tasks = tasks.map {
-                                        if (it.id == task.id) it.copy(isCompleted = !it.isCompleted)
-                                        else it
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            taskDao.updateTask(
+                                                TaskEntity(
+                                                    id = task.id,
+                                                    userId = task.userId,
+                                                    title = task.title,
+                                                    description = task.description,
+                                                    isDone = !task.isCompleted,
+                                                    createdAt = task.createdAt
+                                                )
+                                            )
+                                        }
+                                        tasks = tasks.map {
+                                            if (it.id == task.id) it.copy(isCompleted = !it.isCompleted)
+                                            else it
+                                        }
                                     }
                                 },
                                 onEdit = { selectedTask = task },
                                 onDelete = {
-                                    tasks = tasks.filter { it.id != task.id }
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            taskDao.deleteById(task.id)
+                                        }
+                                        tasks = tasks.filter { it.id != task.id }
+                                    }
                                 }
                             )
                         }
@@ -325,23 +325,35 @@ fun TasksScreen(
         }
     }
 
-    // Add/Edit Task Dialog
     if (showAddDialog) {
         EnhancedTaskDialog(
             onDismiss = { showAddDialog = false },
             onSave = { title, description, priority, dueDate ->
-                val newTask = Task(
-                    id = (tasks.maxOfOrNull { it.id } ?: 0) + 1,
-                    userId = userId,
-                    title = title,
-                    description = description,
-                    isCompleted = false,
-                    priority = priority,
-                    dueDate = dueDate,
-                    createdAt = System.currentTimeMillis()
-                )
-                tasks = tasks + newTask
-                showAddDialog = false
+                scope.launch {
+                    val id = withContext(Dispatchers.IO) {
+                        taskDao.insertTask(
+                            TaskEntity(
+                                userId = userId,
+                                title = title,
+                                description = description,
+                                isDone = false,
+                                createdAt = System.currentTimeMillis()
+                            )
+                        ).toInt()
+                    }
+                    val newTask = Task(
+                        id = id,
+                        userId = userId,
+                        title = title,
+                        description = description,
+                        isCompleted = false,
+                        priority = priority,
+                        dueDate = dueDate,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    tasks = tasks + newTask
+                    showAddDialog = false
+                }
             }
         )
     }
@@ -351,17 +363,26 @@ fun TasksScreen(
             task = selectedTask,
             onDismiss = { selectedTask = null },
             onSave = { title, description, priority, dueDate ->
-                tasks = tasks.map {
-                    if (it.id == selectedTask?.id) {
-                        it.copy(
-                            title = title,
-                            description = description,
-                            priority = priority,
-                            dueDate = dueDate
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        taskDao.updateTask(
+                            TaskEntity(
+                                id = selectedTask!!.id,
+                                userId = userId,
+                                title = title,
+                                description = description,
+                                isDone = selectedTask!!.isCompleted,
+                                createdAt = selectedTask!!.createdAt
+                            )
                         )
-                    } else it
+                    }
+                    tasks = tasks.map {
+                        if (it.id == selectedTask?.id) {
+                            it.copy(title = title, description = description, priority = priority, dueDate = dueDate)
+                        } else it
+                    }
+                    selectedTask = null
                 }
-                selectedTask = null
             }
         )
     }

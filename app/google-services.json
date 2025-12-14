@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1075859048796",
+    "project_id": "tasks-d913c",
+    "storage_bucket": "tasks-d913c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075859048796:android:73005cba11e2af7ddc1999",
+        "android_client_info": {
+          "package_name": "com.example.taskandnotesapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwroFqDZdjwlQw6Kb8ziZmHXoJ7rbvRTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

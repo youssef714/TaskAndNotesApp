@@ -22,6 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.example.taskandnotesapp.data.AppDatabase
+import com.example.taskandnotesapp.data.NoteEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,12 +35,32 @@ fun NotesScreen(
     userId: Int,
     onNavigateBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val noteDao = remember { AppDatabase.getInstance(context).noteDao() }
+    val scope = rememberCoroutineScope()
+
     var notes by remember { mutableStateOf(listOf<Note>()) }
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedNote by remember { mutableStateOf<Note?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
-    var viewMode by remember { mutableStateOf("grid") } // grid or list
+    var viewMode by remember { mutableStateOf("grid") }
+
+    // Load notes from database
+    LaunchedEffect(userId) {
+        notes = withContext(Dispatchers.IO) {
+            noteDao.getNotesForUser(userId).map { entity ->
+                Note(
+                    id = entity.id,
+                    userId = entity.userId,
+                    title = entity.title,
+                    content = entity.content,
+                    createdAt = entity.createdAt,
+                    updatedAt = entity.updatedAt
+                )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -113,7 +139,6 @@ fun NotesScreen(
                         )
                     )
 
-                    // Search Bar
                     AnimatedVisibility(
                         visible = isSearchActive,
                         enter = expandVertically() + fadeIn(),
@@ -153,25 +178,16 @@ fun NotesScreen(
                     onClick = { showAddDialog = true },
                     containerColor = NoteColors.AccentPurple,
                     contentColor = Color.White,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .scale(1f)
+                    modifier = Modifier.size(64.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        "Add Note",
-                        modifier = Modifier.size(32.dp)
-                    )
+                    Icon(Icons.Default.Add, "Add Note", modifier = Modifier.size(32.dp))
                 }
             }
         ) { padding ->
             val filteredNotes = notes.filter { note ->
-                if (searchQuery.isBlank()) {
-                    true
-                } else {
-                    note.title.contains(searchQuery, ignoreCase = true) ||
-                            note.content.contains(searchQuery, ignoreCase = true)
-                }
+                if (searchQuery.isBlank()) true
+                else note.title.contains(searchQuery, ignoreCase = true) ||
+                        note.content.contains(searchQuery, ignoreCase = true)
             }
 
             if (filteredNotes.isEmpty()) {
@@ -185,40 +201,16 @@ fun NotesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            NoteColors.AccentPurple.copy(alpha = 0.2f),
-                                            NoteColors.AccentPurple.copy(alpha = 0.05f)
-                                        )
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.Note,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = NoteColors.AccentPurple
-                            )
-                        }
+                        Icon(
+                            if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.Note,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = NoteColors.AccentPurple
+                        )
                         Text(
                             if (searchQuery.isNotEmpty()) "No notes found" else "No notes yet",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2D3142)
-                        )
-                        Text(
-                            if (searchQuery.isNotEmpty())
-                                "Try a different search"
-                            else
-                                "Create your first note!",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF8B8FA3)
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -249,7 +241,21 @@ fun NotesScreen(
                                 gradient = gradient,
                                 onClick = { selectedNote = note },
                                 onDelete = {
-                                    notes = notes.filter { it.id != note.id }
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            noteDao.deleteNote(
+                                                NoteEntity(
+                                                    id = note.id,
+                                                    userId = note.userId,
+                                                    title = note.title,
+                                                    content = note.content,
+                                                    createdAt = note.createdAt,
+                                                    updatedAt = note.updatedAt
+                                                )
+                                            )
+                                        }
+                                        notes = notes.filter { it.id != note.id }
+                                    }
                                 }
                             )
                         }
@@ -279,7 +285,21 @@ fun NotesScreen(
                                 gradient = gradient,
                                 onClick = { selectedNote = note },
                                 onDelete = {
-                                    notes = notes.filter { it.id != note.id }
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            noteDao.deleteNote(
+                                                NoteEntity(
+                                                    id = note.id,
+                                                    userId = note.userId,
+                                                    title = note.title,
+                                                    content = note.content,
+                                                    createdAt = note.createdAt,
+                                                    updatedAt = note.updatedAt
+                                                )
+                                            )
+                                        }
+                                        notes = notes.filter { it.id != note.id }
+                                    }
                                 }
                             )
                         }
@@ -289,21 +309,33 @@ fun NotesScreen(
         }
     }
 
-    // Add/Edit Note Dialog
     if (showAddDialog) {
         NoteDialog(
             onDismiss = { showAddDialog = false },
             onSave = { title, content ->
-                val newNote = Note(
-                    id = (notes.maxOfOrNull { it.id } ?: 0) + 1,
-                    userId = userId,
-                    title = title,
-                    content = content,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-                notes = notes + newNote
-                showAddDialog = false
+                scope.launch {
+                    val id = withContext(Dispatchers.IO) {
+                        noteDao.insertNote(
+                            NoteEntity(
+                                userId = userId,
+                                title = title,
+                                content = content,
+                                createdAt = System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        ).toInt()
+                    }
+                    val newNote = Note(
+                        id = id,
+                        userId = userId,
+                        title = title,
+                        content = content,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    notes = notes + newNote
+                    showAddDialog = false
+                }
             }
         )
     }
@@ -313,16 +345,30 @@ fun NotesScreen(
             note = selectedNote,
             onDismiss = { selectedNote = null },
             onSave = { title, content ->
-                notes = notes.map {
-                    if (it.id == selectedNote?.id) {
-                        it.copy(
-                            title = title,
-                            content = content,
-                            updatedAt = System.currentTimeMillis()
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        noteDao.updateNote(
+                            NoteEntity(
+                                id = selectedNote!!.id,
+                                userId = userId,
+                                title = title,
+                                content = content,
+                                createdAt = selectedNote!!.createdAt,
+                                updatedAt = System.currentTimeMillis()
+                            )
                         )
-                    } else it
+                    }
+                    notes = notes.map {
+                        if (it.id == selectedNote?.id) {
+                            it.copy(
+                                title = title,
+                                content = content,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        } else it
+                    }
+                    selectedNote = null
                 }
-                selectedNote = null
             }
         )
     }
