@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    userId: Int,
+    userId: String,
     userName: String,
     onLogout: () -> Unit,
     onNavigateToTasks: () -> Unit,

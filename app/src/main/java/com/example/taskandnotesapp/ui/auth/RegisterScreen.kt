@@ -17,17 +17,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskandnotesapp.data.UserDao
-import com.example.taskandnotesapp.data.UserEntity
-import kotlinx.coroutines.Dispatchers
+import com.example.taskandnotesapp.data.AuthRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    userDao: UserDao,
-    onRegisterSuccess: (Int) -> Unit,
+    authRepository: AuthRepository,
+    onRegisterSuccess: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -185,25 +182,21 @@ fun RegisterScreen(
                         isLoading = true
                         errorMessage = null
 
-                        val existing = withContext(Dispatchers.IO) {
-                            userDao.getUserByEmail(email)
-                        }
-
-                        if (existing != null) {
-                            isLoading = false
-                            errorMessage = "This email is already registered"
-                        } else {
-                            val id = withContext(Dispatchers.IO) {
-                                userDao.insertUser(
-                                    UserEntity(
-                                        username = username,
-                                        email = email,
-                                        password = password
-                                    )
-                                ).toInt()
+                        val result = authRepository.signUp(email, password, username)
+                        
+                        if (result.isSuccess) {
+                            val user = result.getOrNull()
+                            if (user != null) {
+                                isLoading = false
+                                onRegisterSuccess(user.uid)
+                            } else {
+                                isLoading = false
+                                errorMessage = "Registration failed"
                             }
+                        } else {
                             isLoading = false
-                            onRegisterSuccess(id)
+                            val exception = result.exceptionOrNull()
+                            errorMessage = exception?.message ?: "Registration failed. Email may already be in use."
                         }
                     }
                 },

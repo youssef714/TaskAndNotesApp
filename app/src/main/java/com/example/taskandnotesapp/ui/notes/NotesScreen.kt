@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
-    userId: Int,
+    userId: String,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current

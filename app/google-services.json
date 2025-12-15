@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "419318371004",
+    "project_id": "tasksandnotesapp",
+    "storage_bucket": "tasksandnotesapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419318371004:android:ca9559b4ab72e0e1a176b9",
+        "android_client_info": {
+          "package_name": "com.example.taskandnotesapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoVuUia09Iag87hGt_9eY37TkF40ijtxA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -9,7 +9,7 @@ class TaskAndNoteIntegrationTest {
     
     @Test
     fun taskAndNote_canBeCreatedForSameUser() {
-        val userId = 100
+        val userId = "100"
         
         val task = Task(
             id = 1,
@@ -41,7 +41,7 @@ class TaskAndNoteIntegrationTest {
     fun taskAndNote_differentUsers() {
         val task = Task(
             id = 1,
-            userId = 100,
+            userId = "100",
             title = "Task",
             description = "Description",
             isCompleted = false,
@@ -52,7 +52,7 @@ class TaskAndNoteIntegrationTest {
         
         val note = Note(
             id = 1,
-            userId = 200,
+            userId = "200",
             title = "Note",
             content = "Content",
             createdAt = System.currentTimeMillis(),
@@ -66,7 +66,7 @@ class TaskAndNoteIntegrationTest {
     fun task_completionFlow() {
         val task = Task(
             id = 1,
-            userId = 100,
+            userId = "100",
             title = "Task",
             description = "Description",
             isCompleted = false,
@@ -89,7 +89,7 @@ class TaskAndNoteIntegrationTest {
         val originalTimestamp = 1234567890L
         val note = Note(
             id = 1,
-            userId = 100,
+            userId = "100",
             title = "Original",
             content = "Original Content",
             createdAt = originalTimestamp,

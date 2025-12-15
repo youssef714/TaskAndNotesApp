@@ -15,7 +15,7 @@ interface NoteDao {
     suspend fun deleteNote(note: NoteEntity)
 
     @Query("SELECT * FROM notes WHERE userId = :userId ORDER BY isPinned DESC, updatedAt DESC")
-    suspend fun getNotesForUser(userId: Int): List<NoteEntity>
+    suspend fun getNotesForUser(userId: String): List<NoteEntity>
 
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     suspend fun getNoteById(id: Int): NoteEntity?
@@ -26,7 +26,7 @@ interface NoteDao {
           AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%')
         ORDER BY isPinned DESC, updatedAt DESC
     """)
-    suspend fun searchNotes(userId: Int, query: String): List<NoteEntity>
+    suspend fun searchNotes(userId: String, query: String): List<NoteEntity>
 
     @Query("UPDATE notes SET isPinned = :pinned WHERE id = :id")
     suspend fun setPinned(id: Int, pinned: Boolean)

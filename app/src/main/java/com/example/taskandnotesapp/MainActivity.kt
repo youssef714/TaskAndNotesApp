@@ -12,8 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.rememberNavController
-import com.example.taskandnotesapp.data.AppDatabase
-import com.example.taskandnotesapp.data.UserDao
+import com.example.taskandnotesapp.data.AuthRepository
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,20 +21,17 @@ import com.example.taskandnotesapp.ui.auth.LoginScreen
 import com.example.taskandnotesapp.ui.auth.RegisterScreen
 import com.example.taskandnotesapp.ui.tasks.TasksScreen
 import com.example.taskandnotesapp.ui.notes.NotesScreen
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db = AppDatabase.getInstance(this)
-        val userDao = db.userDao()
+        val authRepository = AuthRepository()
 
         setContent {
             MaterialTheme {
                 Surface {
-                    TaskAndNotesApp(userDao)
+                    TaskAndNotesApp(authRepository)
                 }
             }
         }
@@ -43,19 +39,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun TaskAndNotesApp(userDao: UserDao) {
+fun TaskAndNotesApp(authRepository: AuthRepository) {
     val navController = rememberNavController()
 
     AppNavHost(
         navController = navController,
-        userDao = userDao
+        authRepository = authRepository
     )
 }
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    userDao: UserDao
+    authRepository: AuthRepository
 ) {
     NavHost(
         navController = navController,
@@ -64,7 +60,7 @@ fun AppNavHost(
 
         composable("login") {
             LoginScreen(
-                userDao = userDao,
+                authRepository = authRepository,
                 onLoginSuccess = { userId ->
                     navController.navigate("main/$userId") {
                         popUpTo("login") { inclusive = true }
@@ -78,9 +74,9 @@ fun AppNavHost(
 
         composable("register") {
             RegisterScreen(
-                userDao = userDao,
-                onRegisterSuccess = {
-                    navController.navigate("login") {
+                authRepository = authRepository,
+                onRegisterSuccess = { userId ->
+                    navController.navigate("main/$userId") {
                         popUpTo("register") { inclusive = true }
                     }
                 },
@@ -89,15 +85,13 @@ fun AppNavHost(
         }
 
         composable("main/{userId}") { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
 
             var userName by remember { mutableStateOf("") }
 
             LaunchedEffect(userId) {
-                val user = withContext(Dispatchers.IO) {
-                    userDao.getUserById(userId)
-                }
-                userName = user?.username ?: "User"
+                val user = authRepository.getCurrentUser()
+                userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
             }
 
             if (userName.isNotEmpty()) {
@@ -105,6 +99,7 @@ fun AppNavHost(
                     userId = userId,
                     userName = userName,
                     onLogout = {
+                        authRepository.signOut()
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -120,7 +115,7 @@ fun AppNavHost(
         }
 
         composable("tasks/{userId}") { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             TasksScreen(
                 userId = userId,
                 onNavigateBack = { navController.popBackStack() }
@@ -128,7 +123,7 @@ fun AppNavHost(
         }
 
         composable("notes/{userId}") { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId")!!.toInt()
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             NotesScreen(
                 userId = userId,
                 onNavigateBack = { navController.popBackStack() }

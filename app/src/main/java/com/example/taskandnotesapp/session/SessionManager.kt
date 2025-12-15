@@ -14,9 +14,9 @@ class SessionManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
-    fun saveLogin(userId: Int) {
+    fun saveLogin(userId: String) {
         prefs.edit()
-            .putInt(KEY_USER_ID, userId)
+            .putString(KEY_USER_ID, userId)
             .putBoolean(KEY_IS_LOGGED_IN, true)
             .apply()
     }
@@ -29,6 +29,5 @@ class SessionManager(context: Context) {
 
     fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_IS_LOGGED_IN, false)
 
-
-    fun getUserId(): Int = prefs.getInt(KEY_USER_ID, -1)
+    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
 }

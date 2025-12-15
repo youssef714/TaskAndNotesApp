@@ -17,16 +17,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.taskandnotesapp.data.UserDao
-import kotlinx.coroutines.Dispatchers
+import com.example.taskandnotesapp.data.AuthRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    userDao: UserDao,
-    onLoginSuccess: (Int) -> Unit,
+    authRepository: AuthRepository,
+    onLoginSuccess: (String) -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -161,16 +159,21 @@ fun LoginScreen(
                         isLoading = true
                         errorMessage = null
 
-                        val user = withContext(Dispatchers.IO) {
-                            userDao.getUserByEmail(email)
-                        }
-
-                        if (user != null && user.password == password) {
-                            isLoading = false
-                            onLoginSuccess(user.id)
+                        val result = authRepository.signIn(email, password)
+                        
+                        if (result.isSuccess) {
+                            val user = result.getOrNull()
+                            if (user != null) {
+                                isLoading = false
+                                onLoginSuccess(user.uid)
+                            } else {
+                                isLoading = false
+                                errorMessage = "Login failed"
+                            }
                         } else {
                             isLoading = false
-                            errorMessage = "Wrong email or password"
+                            val exception = result.exceptionOrNull()
+                            errorMessage = exception?.message ?: "Wrong email or password"
                         }
                     }
                 },
